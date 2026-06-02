@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-devops-app
+  labels:
+    app: nodejs-devops-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-devops-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-devops-app
+    spec:
+      containers:
+      - name: nodejs-devops-app
+        # IMPORTANT:
+        # Replace this image with your real Amazon ECR image URI.
+        # Example:
+        # 123456789012.dkr.ecr.us-east-1.amazonaws.com/nodejs-devops-app:latest
+        image: 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 8
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
