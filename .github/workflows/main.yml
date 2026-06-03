@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-push-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +26,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t nodejs-devops-app:latest ./
+          docker build -t nodejs-devops-app:latest .
 
       - name: Tag Docker Image
         run: |
@@ -36,24 +36,6 @@ jobs:
         run: |
           docker push 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
 
-      - name: Deploy on EC2 Docker
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          command_timeout: 60s
-          script: |
-            echo "Connected to EC2 successfully"
-
-            sudo systemctl start docker || true
-
-            aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 742573506475.dkr.ecr.eu-north-1.amazonaws.com || true
-
-            docker rm -f nodejs-devops-app || true
-
-            docker run -d --name nodejs-devops-app -e PORT=3000 -p 30080:3000 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest || true
-
-            docker ps
-
-            echo "Deployment completed successfully"
+      - name: Finish Pipeline
+        run: |
+          echo "CI/CD pipeline completed successfully"
