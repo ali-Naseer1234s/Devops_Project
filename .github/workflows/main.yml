@@ -36,34 +36,18 @@ jobs:
         run: |
           docker push 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
 
-      - name: Deploy on EC2 Minikube
+      - name: Deploy on EC2 Docker
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 2m
           script: |
             echo "Connected to EC2 successfully"
-
             aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 742573506475.dkr.ecr.eu-north-1.amazonaws.com
-
-            kubectl delete secret ecr-secret --ignore-not-found=true
-
-            kubectl create secret docker-registry ecr-secret \
-              --docker-server=742573506475.dkr.ecr.eu-north-1.amazonaws.com \
-              --docker-username=AWS \
-              --docker-password="$(aws ecr get-login-password --region eu-north-1)"
-
-            cd /home/ec2-user/k8s
-
-            kubectl apply -f deployment.yaml --validate=false
-            kubectl apply -f service.yaml --validate=false
-
-            kubectl rollout restart deployment/nodejs-devops-app
-
-            sleep 20
-
-            kubectl get pods
-            kubectl get services
-
+            docker pull 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
+            docker rm -f nodejs-devops-app || true
+            docker run -d --name nodejs-devops-app -e PORT=3000 -p 30080:3000 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
+            docker ps
             echo "Deployment completed successfully"
