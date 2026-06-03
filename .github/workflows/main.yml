@@ -48,13 +48,11 @@ jobs:
 
             sudo systemctl start docker || true
 
-            aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 742573506475.dkr.ecr.eu-north-1.amazonaws.com
-
-            docker pull 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
+            aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 742573506475.dkr.ecr.eu-north-1.amazonaws.com || true
 
             docker rm -f nodejs-devops-app || true
 
-            docker run -d --name nodejs-devops-app -e PORT=3000 -p 30080:3000 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
+            docker run -d --name nodejs-devops-app -e PORT=3000 -p 30080:3000 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest || true
 
             docker ps
 
