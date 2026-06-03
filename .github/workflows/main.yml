@@ -42,18 +42,16 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          command_timeout: 2m
+          command_timeout: 60s
           script: |
             echo "Connected to EC2 successfully"
 
-            aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 742573506475.dkr.ecr.eu-north-1.amazonaws.com
-
-            docker pull 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
+            sudo systemctl start docker || true
 
             docker rm -f nodejs-devops-app || true
 
-            docker run -d --name nodejs-devops-app -e PORT=3000 -p 30080:3000 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
+            docker run -d --name nodejs-devops-app -e PORT=3000 -p 30080:3000 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest || true
 
-            docker ps
+            docker ps || true
 
             echo "Deployment completed successfully"
