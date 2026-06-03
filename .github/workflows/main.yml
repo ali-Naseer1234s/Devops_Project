@@ -1,4 +1,4 @@
-name: Node.js DevOps CI/CD Pipeline
+name: Build and Deploy CloudPulse
 
 on:
   push:
@@ -10,48 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
         run: |
-          aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 742573506475.dkr.ecr.eu-north-1.amazonaws.com
-
-      - name: Build Docker Image
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+      - name: Build Docker image
         run: |
-          docker build -t nodejs-devops-app:latest .
-
-      - name: Tag Docker Image
+          docker build -t ${{ secrets.ECR_REPOSITORY }} .
+      - name: Tag Docker image
         run: |
-          docker tag nodejs-devops-app:latest 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
-
-      - name: Push Docker Image to ECR
+          docker tag ${{ secrets.ECR_REPOSITORY }}:latest ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
+      - name: Push Docker image to ECR
         run: |
-          docker push 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest
-
-      - name: Deploy on EC2 Docker
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:latest
+      - name: Deploy on EC2 Minikube
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          command_timeout: 60s
           script: |
-            echo "Connected to EC2 successfully"
-
-            sudo systemctl start docker || true
-
-            docker rm -f nodejs-devops-app || true
-
-            docker run -d --name nodejs-devops-app -e PORT=3000 -p 30080:3000 742573506475.dkr.ecr.eu-north-1.amazonaws.com/nodejs-devops-app:latest || true
-
-            docker ps || true
-
-            echo "Deployment completed successfully"
+            cd /home/ec2-user/k8s
+            kubectl rollout restart deployment/cloudpulse-devops-app
+            kubectl get pods
+            kubectl get services
